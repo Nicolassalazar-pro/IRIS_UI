@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const port = 3000;
+const port = 6969;
 
 // Startup cleanup function
 const startupCleanup = () => {
@@ -19,7 +19,7 @@ const startupCleanup = () => {
   }
   
   // Check for and delete any existing audio file
-  const audioPath = path.join(uploadsDir, 'current-audio.mp3');
+  const audioPath = path.join(uploadsDir, 'audio.wav');
   if (fs.existsSync(audioPath)) {
     try {
       fs.unlinkSync(audioPath);
@@ -46,7 +46,7 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: function(req, file, cb) {
-    cb(null, 'current-audio.mp3');
+    cb(null, 'audio.wav');
   }
 });
 
@@ -71,13 +71,13 @@ app.post('/upload-audio', upload.single('audio'), (req, res) => {
   res.json({
     success: true,
     message: 'File uploaded successfully',
-    audioUrl: `http://localhost:${port}/uploads/current-audio.mp3`
+    audioUrl: `http://localhost:${port}/uploads/audio.wav`
   });
 });
 
 // Endpoint to delete the current audio file after playback
 app.post('/delete-audio', (req, res) => {
-  const audioPath = path.join(__dirname, 'uploads', 'current-audio.mp3');
+  const audioPath = path.join(__dirname, 'uploads', 'audio.wav');
   
   fs.access(audioPath, fs.constants.F_OK, (err) => {
     if (err) {
@@ -108,7 +108,7 @@ app.post('/delete-audio', (req, res) => {
 
 // Endpoint to check and clean up any existing audio files
 app.get('/cleanup', (req, res) => {
-  const audioPath = path.join(__dirname, 'uploads', 'current-audio.mp3');
+  const audioPath = path.join(__dirname, 'uploads', 'audio.wav');
   
   fs.access(audioPath, fs.constants.F_OK, (err) => {
     if (!err) {
@@ -134,6 +134,7 @@ app.get('/status', (req, res) => {
   res.json({ status: 'Server is running' });
 });
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Server running at http://localhost:${port}`);
+  console.log(`For network access use: http://<your-ip-address>:${port}`);
 });

@@ -104,7 +104,7 @@ function loadAndPlayAudio(audioId) {
   initAudioContext();
   
   const audioLoader = new THREE.AudioLoader();
-  audioLoader.load(`http://localhost:3000/uploads/current-audio.mp3?t=${audioId}`, 
+  audioLoader.load(`http://localhost:3000/uploads/audio.wav?t=${audioId}`, 
     // Success callback
     function(buffer) {
       console.log("Audio loaded successfully");
@@ -162,7 +162,7 @@ function checkForNewAudio() {
     return;
   }
   
-  fetch('http://localhost:3000/uploads/current-audio.mp3', { 
+  fetch('http://localhost:3000/uploads/audio.wav', { 
     method: 'HEAD',
     cache: 'no-store'
   })

@@ -758,7 +758,7 @@ function loadAndPlayAudio(audioId) {
     // Make sure audio context is initialized
     initAudioContext();
     const audioLoader = new _three.AudioLoader();
-    audioLoader.load(`http://localhost:3000/uploads/current-audio.mp3?t=${audioId}`, // Success callback
+    audioLoader.load(`http://localhost:3000/uploads/audio.wav?t=${audioId}`, // Success callback
     function(buffer) {
         console.log("Audio loaded successfully");
         // If sound is already playing, stop it
@@ -800,7 +800,7 @@ function loadAndPlayAudio(audioId) {
 function checkForNewAudio() {
     // Skip checking if we're already processing an audio file
     if (isProcessingAudio) return;
-    fetch('http://localhost:3000/uploads/current-audio.mp3', {
+    fetch('http://localhost:3000/uploads/audio.wav', {
         method: 'HEAD',
         cache: 'no-store'
     }).then((response)=>{
