@@ -39,9 +39,9 @@ camera.lookAt(0, 0, 0);
 const uniforms = {
     u_time: {type: 'f', value: 0.0},
     u_frequency: {type: 'f', value: 0.0},
-    u_red: {type: 'f', value: 0.2},    // Adjusted base color to complement blue particles
-    u_green: {type: 'f', value: 0.4},  // Slightly more green for a teal shade
-    u_blue: {type: 'f', value: 0.8}    // High blue value
+    u_red: {type: 'f', value: 1},    // Adjusted base color to complement blue particles
+    u_green: {type: 'f', value: 1},  // Slightly more green for a teal shade
+    u_blue: {type: 'f', value: 1}    // High blue value
 }
 
 const mat = new THREE.ShaderMaterial({
@@ -50,13 +50,28 @@ const mat = new THREE.ShaderMaterial({
     fragmentShader: document.getElementById('fragmentshader').textContent
 });
 
-const geo = new THREE.IcosahedronGeometry(4, 30);
+const Scale = 4
+const geo = new THREE.IcosahedronGeometry(1, 5);
 const mesh = new THREE.Mesh(geo, mat);
+mesh.scale.set(Scale, Scale, Scale);
 scene.add(mesh);
 mesh.material.wireframe = true;
 
+const rotationSpeed = {
+  x: 0.05,
+  y: 0.03,
+  z: 0.02
+};
+
+// Random starting rotation offsets
+const rotationOffset = {
+  x: Math.random() * Math.PI * 2,
+  y: Math.random() * Math.PI * 2,
+  z: Math.random() * Math.PI * 2
+};
+
 // Create and add our particle system
-const particles = new ParticleSystem(200, 3.5, scene);
+const particles = new ParticleSystem(1000, 2, scene);
 
 // Make sure audio context is created properly
 let audioContextInitialized = false;
@@ -104,14 +119,14 @@ function loadAndPlayAudio(audioId) {
   initAudioContext();
   
   const audioLoader = new THREE.AudioLoader();
-  audioLoader.load(`http://localhost:3000/uploads/audio.wav?t=${audioId}`, 
+  audioLoader.load(`http://localhost:6969/uploads/audio.wav?t=${audioId}`, 
     // Success callback
     function(buffer) {
       console.log("Audio loaded successfully");
       
       // If sound is already playing, stop it
       if (sound.isPlaying) {
-        sound.stop();
+        //sound.stop();
       }
       
       // Small delay before playing to ensure buffer is fully processed
@@ -124,7 +139,7 @@ function loadAndPlayAudio(audioId) {
         sound.onEnded = function() {
           console.log("Audio finished playing, requesting deletion");
           
-          fetch('http://localhost:3000/delete-audio', {
+          fetch('http://localhost:6969/delete-audio', {
             method: 'POST'
           })
           .then(() => {
@@ -162,7 +177,7 @@ function checkForNewAudio() {
     return;
   }
   
-  fetch('http://localhost:3000/uploads/audio.wav', { 
+  fetch('http://localhost:6969/uploads/audio.wav', { 
     method: 'HEAD',
     cache: 'no-store'
   })
@@ -185,7 +200,7 @@ window.addEventListener('load', function() {
   currentAudioId = null;
   
   // On refresh/load, force cleanup of any existing files
-  fetch('http://localhost:3000/cleanup', {
+  fetch('http://localhost:6969/cleanup', {
     method: 'GET'
   })
   .then(() => {
@@ -197,24 +212,29 @@ window.addEventListener('load', function() {
 });
 
 // Check for new audio every second
-setInterval(checkForNewAudio, 1000);
+setInterval(checkForNewAudio, 100);
 
 const clock = new THREE.Clock();
 function animate() {
-    const time = clock.getElapsedTime();
-    uniforms.u_time.value = time;
-    
-    const frequency = analyser.getAverageFrequency();
-    uniforms.u_frequency.value = frequency;
-    
-    // Update the particle system with current time
-    particles.update(time);
-    
-    // Have particles respond to audio
-    particles.respondToAudio(frequency);
-    
-    bloomComposer.render();
-    requestAnimationFrame(animate);
+  const time = clock.getElapsedTime();
+  uniforms.u_time.value = time;
+  
+  const frequency = analyser.getAverageFrequency();
+  uniforms.u_frequency.value = frequency;
+  
+  // Update the particle system with current time
+  particles.update(time);
+  
+  // Have particles respond to audio
+  particles.respondToAudio(frequency);
+  
+  // Add mesh rotation with varied speeds
+  mesh.rotation.x = rotationOffset.x + (Math.sin(time * 0.4) * 0.2) + (time * rotationSpeed.x);
+  mesh.rotation.y = rotationOffset.y + (Math.sin(time * 0.3) * 0.3) + (time * rotationSpeed.y);
+  mesh.rotation.z = rotationOffset.z + (Math.sin(time * 0.7) * 0.1) + (time * rotationSpeed.z);
+  
+  bloomComposer.render();
+  requestAnimationFrame(animate);
 }
 animate();
 

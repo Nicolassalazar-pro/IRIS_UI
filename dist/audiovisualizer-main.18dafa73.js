@@ -156,11 +156,11 @@
       });
     }
   }
-})({"7qRz1":[function(require,module,exports,__globalThis) {
+})({"4enDW":[function(require,module,exports,__globalThis) {
 var global = arguments[3];
 var HMR_HOST = null;
 var HMR_PORT = null;
-var HMR_SERVER_PORT = 1234;
+var HMR_SERVER_PORT = 8008;
 var HMR_SECURE = false;
 var HMR_ENV_HASH = "439701173a9199ea";
 var HMR_USE_SSE = false;
@@ -701,15 +701,15 @@ const uniforms = {
     },
     u_red: {
         type: 'f',
-        value: 0.2
+        value: 1
     },
     u_green: {
         type: 'f',
-        value: 0.4
+        value: 1
     },
     u_blue: {
         type: 'f',
-        value: 0.8
+        value: 1
     } // High blue value
 };
 const mat = new _three.ShaderMaterial({
@@ -717,12 +717,25 @@ const mat = new _three.ShaderMaterial({
     vertexShader: document.getElementById('vertexshader').textContent,
     fragmentShader: document.getElementById('fragmentshader').textContent
 });
-const geo = new _three.IcosahedronGeometry(4, 30);
+const Scale = 4;
+const geo = new _three.IcosahedronGeometry(1, 5);
 const mesh = new _three.Mesh(geo, mat);
+mesh.scale.set(Scale, Scale, Scale);
 scene.add(mesh);
 mesh.material.wireframe = true;
+const rotationSpeed = {
+    x: 0.05,
+    y: 0.03,
+    z: 0.02
+};
+// Random starting rotation offsets
+const rotationOffset = {
+    x: Math.random() * Math.PI * 2,
+    y: Math.random() * Math.PI * 2,
+    z: Math.random() * Math.PI * 2
+};
 // Create and add our particle system
-const particles = new (0, _particleSystemJsDefault.default)(200, 3.5, scene);
+const particles = new (0, _particleSystemJsDefault.default)(1000, 2, scene);
 // Make sure audio context is created properly
 let audioContextInitialized = false;
 const initAudioContext = ()=>{
@@ -758,11 +771,11 @@ function loadAndPlayAudio(audioId) {
     // Make sure audio context is initialized
     initAudioContext();
     const audioLoader = new _three.AudioLoader();
-    audioLoader.load(`http://localhost:3000/uploads/audio.wav?t=${audioId}`, // Success callback
+    audioLoader.load(`http://localhost:6969/uploads/audio.wav?t=${audioId}`, // Success callback
     function(buffer) {
         console.log("Audio loaded successfully");
         // If sound is already playing, stop it
-        if (sound.isPlaying) sound.stop();
+        sound.isPlaying;
         // Small delay before playing to ensure buffer is fully processed
         setTimeout(()=>{
             sound.setBuffer(buffer);
@@ -771,7 +784,7 @@ function loadAndPlayAudio(audioId) {
             // Delete the file after playback completes
             sound.onEnded = function() {
                 console.log("Audio finished playing, requesting deletion");
-                fetch('http://localhost:3000/delete-audio', {
+                fetch('http://localhost:6969/delete-audio', {
                     method: 'POST'
                 }).then(()=>{
                     console.log("Audio file deleted successfully");
@@ -800,7 +813,7 @@ function loadAndPlayAudio(audioId) {
 function checkForNewAudio() {
     // Skip checking if we're already processing an audio file
     if (isProcessingAudio) return;
-    fetch('http://localhost:3000/uploads/audio.wav', {
+    fetch('http://localhost:6969/uploads/audio.wav', {
         method: 'HEAD',
         cache: 'no-store'
     }).then((response)=>{
@@ -819,7 +832,7 @@ window.addEventListener('load', function() {
     isProcessingAudio = false;
     currentAudioId = null;
     // On refresh/load, force cleanup of any existing files
-    fetch('http://localhost:3000/cleanup', {
+    fetch('http://localhost:6969/cleanup', {
         method: 'GET'
     }).then(()=>{
         console.log("Initial cleanup complete");
@@ -828,7 +841,7 @@ window.addEventListener('load', function() {
     });
 });
 // Check for new audio every second
-setInterval(checkForNewAudio, 1000);
+setInterval(checkForNewAudio, 100);
 const clock = new _three.Clock();
 function animate() {
     const time = clock.getElapsedTime();
@@ -839,6 +852,10 @@ function animate() {
     particles.update(time);
     // Have particles respond to audio
     particles.respondToAudio(frequency);
+    // Add mesh rotation with varied speeds
+    mesh.rotation.x = rotationOffset.x + Math.sin(time * 0.4) * 0.2 + time * rotationSpeed.x;
+    mesh.rotation.y = rotationOffset.y + Math.sin(time * 0.3) * 0.3 + time * rotationSpeed.y;
+    mesh.rotation.z = rotationOffset.z + Math.sin(time * 0.7) * 0.1 + time * rotationSpeed.z;
     bloomComposer.render();
     requestAnimationFrame(animate);
 }
@@ -32044,6 +32061,6 @@ class ParticleSystem {
 }
 exports.default = ParticleSystem;
 
-},{"three":"dsoTF","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT"}]},["7qRz1","dnnhU"], "dnnhU", "parcelRequire5ac7")
+},{"three":"dsoTF","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT"}]},["4enDW","dnnhU"], "dnnhU", "parcelRequire5ac7")
 
 //# sourceMappingURL=audiovisualizer-main.18dafa73.js.map
