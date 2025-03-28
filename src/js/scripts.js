@@ -36,35 +36,79 @@ bloomComposer.addPass(outputPass);
 camera.position.set(0, -2, 14);
 camera.lookAt(0, 0, 0);
 
-const uniforms = {
+// First mesh (white wireframe)
+const uniforms1 = {
     u_time: {type: 'f', value: 0.0},
     u_frequency: {type: 'f', value: 0.0},
-    u_red: {type: 'f', value: 1.0},    // Pure white color (1,1,1)
+    u_red: {type: 'f', value: 1.0},    // Pure white color
     u_green: {type: 'f', value: 1.0},  
     u_blue: {type: 'f', value: 1.0}    
 }
 
-const mat = new THREE.ShaderMaterial({
-    uniforms,
+const mat1 = new THREE.ShaderMaterial({
+    uniforms: uniforms1,
     vertexShader: document.getElementById('vertexshader').textContent,
     fragmentShader: document.getElementById('fragmentshader').textContent
 });
 
-const Scale = 1
-const geo = new THREE.IcosahedronGeometry(1, 5); // Reduced details level for fewer triangles
-const mesh = new THREE.Mesh(geo, mat);
-mesh.scale.set(Scale, Scale, Scale); // Scale up by 4 times
-scene.add(mesh);
-mesh.material.wireframe = true;
+// Settings for the first mesh with the look you want
+const Scale1 = 4;
+const geo1 = new THREE.IcosahedronGeometry(1, 5); // Lower detail count, smaller radius
 
-const rotationSpeed = {
+// Create and add the first mesh
+const mesh1 = new THREE.Mesh(geo1, mat1);
+mesh1.scale.set(Scale1, Scale1, Scale1);
+scene.add(mesh1);
+mesh1.material.wireframe = true;
+
+// Second mesh (solid with color transitions)
+const uniforms2 = {
+    u_time: {type: 'f', value: 0.0},
+    u_frequency: {type: 'f', value: 0.0},
+    u_red: {type: 'f', value: 0.2},    // Starting with blue color
+    u_green: {type: 'f', value: 0.4},  
+    u_blue: {type: 'f', value: 0.8}    
+}
+
+const mat2 = new THREE.ShaderMaterial({
+    uniforms: uniforms2,
+    vertexShader: document.getElementById('vertexshader').textContent,
+    fragmentShader: document.getElementById('fragmentshader').textContent,
+    transparent: true,    // Enable transparency
+    opacity: 0.7          // Make it slightly transparent
+});
+
+// Settings for the second mesh (smaller solid mesh)
+const Scale2 = 1;
+const geo2 = new THREE.IcosahedronGeometry(1, 5); // Same geometry but different scale
+
+// Create and add the second mesh
+const mesh2 = new THREE.Mesh(geo2, mat2);
+mesh2.scale.set(Scale2, Scale2, Scale2);
+scene.add(mesh2);
+mesh2.material.wireframe = false; // Solid faces
+
+// Rotation settings for both meshes
+const rotationSpeed1 = {
   x: 0.05,
   y: 0.03,
   z: 0.02
 };
 
+const rotationSpeed2 = {
+  x: 0.04,  // Slightly different speeds
+  y: 0.01,
+  z: 0.03
+};
+
 // Random starting rotation offsets
-const rotationOffset = {
+const rotationOffset1 = {
+  x: Math.random() * Math.PI * 2,
+  y: Math.random() * Math.PI * 2,
+  z: Math.random() * Math.PI * 2
+};
+
+const rotationOffset2 = {
   x: Math.random() * Math.PI * 2,
   y: Math.random() * Math.PI * 2,
   z: Math.random() * Math.PI * 2
@@ -246,21 +290,38 @@ setInterval(checkForNewAudio, 100);
 const clock = new THREE.Clock();
 function animate() {
   const time = clock.getElapsedTime();
-  uniforms.u_time.value = time;
   
+  // Update uniforms for first mesh
+  uniforms1.u_time.value = time;
   const frequency = analyser.getAverageFrequency();
-  uniforms.u_frequency.value = frequency;
+  
+  // This is the key adjustment - we multiply by 4 to match the original wave-to-size ratio
+  uniforms1.u_frequency.value = frequency * Scale1;
+  
+  // Update uniforms for second mesh
+  uniforms2.u_time.value = time;
+  uniforms2.u_frequency.value = frequency * Scale2;
+  
+  // Create color transition for second mesh (cycling through blue tones)
+  const bluePhase = (Math.sin(time * 0.3) + 1) / 2; // Value between 0-1
+  // Mix between two different blue shades
+  uniforms2.u_red.value = 0.1 + (bluePhase * 0.3);    // 0.1 to 0.4 (low red for blue)
+  uniforms2.u_green.value = 0.2 + (bluePhase * 0.4);  // 0.2 to 0.6 (medium green for cyan-blue)
+  uniforms2.u_blue.value = 0.6 + (bluePhase * 0.4);   // 0.6 to 1.0 (high blue)
   
   // Update the particle system with current time
   particles.update(time);
-  
-  // Have particles respond to audio
   particles.respondToAudio(frequency);
   
-  // Add mesh rotation with varied speeds
-  mesh.rotation.x = rotationOffset.x + (Math.sin(time * 0.4) * 0.2) + (time * rotationSpeed.x);
-  mesh.rotation.y = rotationOffset.y + (Math.sin(time * 0.3) * 0.3) + (time * rotationSpeed.y);
-  mesh.rotation.z = rotationOffset.z + (Math.sin(time * 0.7) * 0.1) + (time * rotationSpeed.z);
+  // Rotate first mesh
+  mesh1.rotation.x = rotationOffset1.x + (Math.sin(time * 0.4) * 0.2) + (time * rotationSpeed1.x);
+  mesh1.rotation.y = rotationOffset1.y + (Math.sin(time * 0.3) * 0.3) + (time * rotationSpeed1.y);
+  mesh1.rotation.z = rotationOffset1.z + (Math.sin(time * 0.7) * 0.1) + (time * rotationSpeed1.z);
+  
+  // Rotate second mesh (different pattern)
+  mesh2.rotation.x = rotationOffset2.x + (Math.sin(time * 0.2) * 0.3) + (time * rotationSpeed2.x);
+  mesh2.rotation.y = rotationOffset2.y + (Math.sin(time * 0.5) * 0.2) + (time * rotationSpeed2.y);
+  mesh2.rotation.z = rotationOffset2.z + (Math.sin(time * 0.3) * 0.2) + (time * rotationSpeed2.z);
   
   bloomComposer.render();
   requestAnimationFrame(animate);
