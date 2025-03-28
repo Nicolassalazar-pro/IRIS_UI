@@ -23,8 +23,8 @@ const renderScene = new RenderPass(scene, camera);
 
 const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight));
 bloomPass.threshold = 0;
-bloomPass.strength = 0; // Increased bloom strength to enhance particles
-bloomPass.radius = 0;   // Slight blur to blend everything
+bloomPass.strength = 0; // No bloom for a clean white look without glow
+bloomPass.radius = 0;   
 
 const bloomComposer = new EffectComposer(renderer);
 bloomComposer.addPass(renderScene);
@@ -39,9 +39,9 @@ camera.lookAt(0, 0, 0);
 const uniforms = {
     u_time: {type: 'f', value: 0.0},
     u_frequency: {type: 'f', value: 0.0},
-    u_red: {type: 'f', value: 1},    // Adjusted base color to complement blue particles
-    u_green: {type: 'f', value: 1},  // Slightly more green for a teal shade
-    u_blue: {type: 'f', value: 1}    // High blue value
+    u_red: {type: 'f', value: 1.0},    // Pure white color (1,1,1)
+    u_green: {type: 'f', value: 1.0},  
+    u_blue: {type: 'f', value: 1.0}    
 }
 
 const mat = new THREE.ShaderMaterial({
@@ -50,10 +50,10 @@ const mat = new THREE.ShaderMaterial({
     fragmentShader: document.getElementById('fragmentshader').textContent
 });
 
-const Scale = 4
-const geo = new THREE.IcosahedronGeometry(1, 5);
+const Scale = 1
+const geo = new THREE.IcosahedronGeometry(1, 5); // Reduced details level for fewer triangles
 const mesh = new THREE.Mesh(geo, mat);
-mesh.scale.set(Scale, Scale, Scale);
+mesh.scale.set(Scale, Scale, Scale); // Scale up by 4 times
 scene.add(mesh);
 mesh.material.wireframe = true;
 
@@ -104,6 +104,28 @@ const analyser = new THREE.AudioAnalyser(sound, 32);
 let isProcessingAudio = false;
 let currentAudioId = null;
 
+// Function to request audio deletion
+function requestAudioDeletion() {
+  // Only delete once
+  if (!isProcessingAudio) return;
+  
+  console.log("Requesting audio deletion");
+  
+  fetch('http://localhost:6969/delete-audio', {
+    method: 'POST'
+  })
+  .then(() => {
+    console.log("Audio file deleted successfully");
+    isProcessingAudio = false;
+    currentAudioId = null;
+  })
+  .catch(err => {
+    console.log('Error deleting audio:', err);
+    isProcessingAudio = false;
+    currentAudioId = null;
+  });
+}
+
 // Function to load and play the audio
 function loadAndPlayAudio(audioId) {
   // If we're already processing this file, skip
@@ -126,35 +148,29 @@ function loadAndPlayAudio(audioId) {
       
       // If sound is already playing, stop it
       if (sound.isPlaying) {
-        //sound.stop();
+        sound.stop();
       }
+      
+      // Get audio duration
+      const duration = buffer.duration;
+      console.log("Audio duration:", duration, "seconds");
       
       // Small delay before playing to ensure buffer is fully processed
       setTimeout(() => {
         sound.setBuffer(buffer);
         sound.setLoop(false); // Ensure no looping
         sound.play();
+        console.log("Audio started playing");
         
-        // Delete the file after playback completes
+        // Set both an event handler AND a timeout to ensure cleanup
         sound.onEnded = function() {
-          console.log("Audio finished playing, requesting deletion");
-          
-          fetch('http://localhost:6969/delete-audio', {
-            method: 'POST'
-          })
-          .then(() => {
-            console.log("Audio file deleted successfully");
-            // Reset flags after successful deletion
-            isProcessingAudio = false;
-            currentAudioId = null;
-          })
-          .catch(err => {
-            console.log('Error deleting audio:', err);
-            // Reset flags on error too
-            isProcessingAudio = false;
-            currentAudioId = null;
-          });
+          console.log("onEnded event triggered");
+          requestAudioDeletion();
         };
+        
+        // Backup timeout in case the onEnded event doesn't fire
+        // Set it to slightly longer than the audio duration
+        setTimeout(requestAudioDeletion, (duration * 1000) + 500);
       }, 100); // 100ms delay
     },
     // Progress callback
@@ -211,7 +227,20 @@ window.addEventListener('load', function() {
   });
 });
 
-// Check for new audio every second
+// Add cleanup handler when page unloads
+window.addEventListener('beforeunload', function() {
+  if (sound.isPlaying) {
+    sound.stop();
+    // Try to delete the file
+    fetch('http://localhost:6969/delete-audio', {
+      method: 'POST',
+      // Use keepalive to ensure request completes even during page unload
+      keepalive: true
+    });
+  }
+});
+
+// Check for new audio every 100ms
 setInterval(checkForNewAudio, 100);
 
 const clock = new THREE.Clock();
