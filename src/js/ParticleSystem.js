@@ -11,14 +11,20 @@ class ParticleSystem {
         // Create a reusable geometry for all particles
         this.geometry = new THREE.BoxGeometry(0.05, 0.05, 0.05);
         
+        // Define the central gap radius (matching the mesh size)
+        this.centralGapRadius = 1.0; // This matches the mesh radius
+        
         this.init();
     }
     
     init() {
         // Create individual particles
         for (let i = 0; i < this.count; i++) {
-            // Random orbit parameters
-            const orbitRadius = Math.random() * this.radius;
+            // Random orbit parameters with minimum distance from center
+            // This ensures particles orbit around the central gap
+            const minRadius = this.centralGapRadius * 1.2; // Slightly larger than the mesh
+            const orbitRadius = minRadius + Math.random() * (this.radius - minRadius);
+            
             const orbitSpeed = 0.2 + Math.random() * 0.8; // Range of speeds
             const orbitAngle = Math.random() * Math.PI * 2;
             
@@ -130,6 +136,22 @@ class ParticleSystem {
                 0.8, 
                 Math.min(100, data.lightness + normalizedFreq * 40)/100
             );
+            
+            // Audio response can also affect the particle distances from center
+            // Pull particles slightly toward or away from the center based on frequency
+            if (normalizedFreq > 0.5) {
+                // Create a pulse effect that preserves the central gap
+                const pulseEffect = (normalizedFreq - 0.5) * 0.2; // Up to 10% change
+                const currentRadius = particle.userData.orbitRadius;
+                const pulsedRadius = currentRadius * (1 + pulseEffect * Math.sin(data.pulsePhase));
+                
+                // Ensure we never go below the central gap radius
+                const safeRadius = Math.max(this.centralGapRadius * 1.2, pulsedRadius);
+                
+                // Apply this temporary radius change
+                const direction = particle.position.clone().normalize();
+                particle.position.copy(direction.multiplyScalar(safeRadius));
+            }
         });
     }
 }

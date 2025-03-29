@@ -115,7 +115,7 @@ const rotationOffset2 = {
 };
 
 // Create and add our particle system
-const particles = new ParticleSystem(1000, 2, scene);
+const particles = new ParticleSystem(1500, 3, scene);
 
 // Make sure audio context is created properly
 let audioContextInitialized = false;
