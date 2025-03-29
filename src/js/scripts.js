@@ -88,15 +88,38 @@ mesh2.scale.set(Scale2, Scale2, Scale2);
 scene.add(mesh2);
 mesh2.material.wireframe = false; // Solid faces
 
-// Add black edges to mesh2
-const edgesGeometry = new THREE.EdgesGeometry(geo2);
-const edgesMaterial = new THREE.LineBasicMaterial({ 
-    color: 0x000000,  // Black color for edges
-    linewidth: 1      // Line width (note: this has limited browser support)
+// Create a wrapper group for mesh2 and its edges
+const mesh2Group = new THREE.Group();
+scene.add(mesh2Group);
+
+// Remove mesh2 from scene and add it to the group instead
+scene.remove(mesh2);
+mesh2Group.add(mesh2);
+
+// We need a different approach for the edges
+// Instead of using EdgesGeometry, we'll create a wireframe version
+// of the exact same geometry with the same shader material
+const edgesMat = new THREE.ShaderMaterial({
+    uniforms: uniforms2, // Share the same uniforms object
+    vertexShader: document.getElementById('vertexshader').textContent,
+    fragmentShader: document.getElementById('fragmentshader').textContent
 });
-const edges = new THREE.LineSegments(edgesGeometry, edgesMaterial);
-// Add edges to mesh2 so they transform together
-mesh2.add(edges);
+
+// Override the fragment shader to always be black
+edgesMat.fragmentShader = `
+    void main() {
+        gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); // Pure black
+    }
+`;
+
+// Clone the same geometry and make it wireframe
+const edgesGeometry = geo2.clone(); // Use the exact same geometry
+
+// Create mesh with wireframe
+const edges = new THREE.Mesh(edgesGeometry, edgesMat);
+edges.material.wireframe = true; // Make it wireframe
+edges.scale.set(1.001, 1.001, 1.001); // Slightly larger to avoid z-fighting
+mesh2Group.add(edges); // Add edges to the same group
 
 // Variable to control mesh2 rotation speed (positive for clockwise rotation)
 const mesh2_speed = .8; // Change this value to adjust rotation speed
@@ -302,7 +325,7 @@ function animate() {
   // This is the key adjustment - we multiply by 4 to match the original wave-to-size ratio
   uniforms1.u_frequency.value = frequency * ((Scale1 * .25)*.2);
   
-  // Update uniforms for second mesh
+  // Update uniforms for second mesh and its edges
   uniforms2.u_time.value = time;
   uniforms2.u_frequency.value = frequency * Scale2;
   
@@ -322,8 +345,8 @@ function animate() {
   mesh1.rotation.y = rotationOffset1.y + (Math.sin(time * 0.3) * 0.3) + (time * rotationSpeed1.y);
   mesh1.rotation.z = rotationOffset1.z + (Math.sin(time * 0.7) * 0.1) + (time * rotationSpeed1.z);
   
-  // Rotate second mesh in one direction (clockwise around Y axis)
-  mesh2.rotation.y = rotationOffset2 + (time * mesh2_speed);
+  // Rotate second mesh group as a whole (both mesh and edges)
+  mesh2Group.rotation.y = rotationOffset2 + (time * mesh2_speed);
   
   bloomComposer.render();
   requestAnimationFrame(animate);
