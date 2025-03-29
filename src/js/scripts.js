@@ -88,27 +88,24 @@ mesh2.scale.set(Scale2, Scale2, Scale2);
 scene.add(mesh2);
 mesh2.material.wireframe = false; // Solid faces
 
-// Add colored edges to mesh2
+// Add black edges to mesh2
 const edgesGeometry = new THREE.EdgesGeometry(geo2);
 const edgesMaterial = new THREE.LineBasicMaterial({ 
-    color: 0xfffff,
-    linewidth: 2      // Line width (note: this has limited browser support)
+    color: 0x000000,  // Black color for edges
+    linewidth: 1      // Line width (note: this has limited browser support)
 });
 const edges = new THREE.LineSegments(edgesGeometry, edgesMaterial);
 // Add edges to mesh2 so they transform together
 mesh2.add(edges);
 
-// Rotation settings for both meshes
+// Variable to control mesh2 rotation speed (positive for clockwise rotation)
+const mesh2_speed = .8; // Change this value to adjust rotation speed
+
+// Rotation settings for first mesh
 const rotationSpeed1 = {
   x: 0.05,
   y: 0.03,
   z: 0.02
-};
-
-const rotationSpeed2 = {
-  x: 0.04,  // Slightly different speeds
-  y: 0.01,
-  z: 0.03
 };
 
 // Random starting rotation offsets
@@ -118,11 +115,8 @@ const rotationOffset1 = {
   z: Math.random() * Math.PI * 2
 };
 
-const rotationOffset2 = {
-  x: Math.random() * Math.PI * 2,
-  y: Math.random() * Math.PI * 2,
-  z: Math.random() * Math.PI * 2
-};
+// Random starting rotation offset for mesh2
+const rotationOffset2 = Math.random() * Math.PI * 2;
 
 // Create and add our particle system
 const particles = new ParticleSystem(1500, 3, scene);
@@ -306,7 +300,7 @@ function animate() {
   const frequency = analyser.getAverageFrequency();
   
   // This is the key adjustment - we multiply by 4 to match the original wave-to-size ratio
-  uniforms1.u_frequency.value = frequency * Scale1;
+  uniforms1.u_frequency.value = frequency * ((Scale1 * .25)*.2);
   
   // Update uniforms for second mesh
   uniforms2.u_time.value = time;
@@ -319,13 +313,6 @@ function animate() {
   uniforms2.u_green.value = 0.2 + (bluePhase * 0.4);  // 0.2 to 0.6 (medium green for cyan-blue)
   uniforms2.u_blue.value = 0.6 + (bluePhase * 0.4);   // 0.6 to 1.0 (high blue)
   
-  // Update the edge color to create a pulsing effect
-  const edgeColorPhase = (Math.sin(time * 0.5) + 1) / 2; // Value between 0-1
-  const edgeColor = new THREE.Color();
-  // Use a complementary color scheme for edges compared to the mesh
-  edgeColor.setHSL(0.6 + edgeColorPhase * 0.2, 1.0, 0.7); // Cycle through light blue to purple
-  edges.material.color = edgeColor;
-  
   // Update the particle system with current time
   particles.update(time);
   particles.respondToAudio(frequency);
@@ -335,10 +322,8 @@ function animate() {
   mesh1.rotation.y = rotationOffset1.y + (Math.sin(time * 0.3) * 0.3) + (time * rotationSpeed1.y);
   mesh1.rotation.z = rotationOffset1.z + (Math.sin(time * 0.7) * 0.1) + (time * rotationSpeed1.z);
   
-  // Rotate second mesh (different pattern)
-  mesh2.rotation.x = rotationOffset2.x + (Math.sin(time * 0.2) * 0.3) + (time * rotationSpeed2.x);
-  mesh2.rotation.y = rotationOffset2.y + (Math.sin(time * 0.5) * 0.2) + (time * rotationSpeed2.y);
-  mesh2.rotation.z = rotationOffset2.z + (Math.sin(time * 0.3) * 0.2) + (time * rotationSpeed2.z);
+  // Rotate second mesh in one direction (clockwise around Y axis)
+  mesh2.rotation.y = rotationOffset2 + (time * mesh2_speed);
   
   bloomComposer.render();
   requestAnimationFrame(animate);
